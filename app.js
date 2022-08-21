@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 
 const animalsRoutes = require("./routes/animals-routes");
 const usersRoutes = require("./routes/users-routes");
@@ -28,4 +29,10 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || "알 수 없는 에러가 발생하였습니다." });
 });
 
-app.listen(5000);
+mongoose
+    .connect(`mongodb+srv://lucia:MivRehoAzwASiTyf@cluster0.xg4o7.mongodb.net/animals?retryWrites=true&w=majority`)
+    .then(() => {
+      app.listen(5000);
+      console.log('DB CONNECTED')
+    })
+    .catch((err) => console.log(err));

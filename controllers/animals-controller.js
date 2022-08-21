@@ -2,53 +2,65 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
+const Animal = require("../models/animal");
+const User = require("../models/user");
+const { default: mongoose } = require("mongoose");
 
-let DUMMY_ANIMALS = [
-  {
-    id: "a1",
-    animalName: "봉순",
-    species: "코리안 숏헤어",
-    age: 13,
-    description: "성질이 드러움",
-    imageUrl:
-      "https://www.rd.com/wp-content/uploads/2021/04/GettyImages-528127648-scaled.jpg?resize=1536,1027",
-    creator: "u1",
-  },
-  {
-    id: "a2",
-    animalName: "봉철",
-    species: "페르시안 친칠라",
-    age: 13,
-    description: "털이 많이 빠짐",
-    imageUrl:
-      "https://www.rd.com/wp-content/uploads/2021/04/GettyImages-528127648-scaled.jpg?resize=1536,1027",
-    creator: "u1",
-  },
-];
-
-const getAnimalById = (req, res, next) => {
+const getAnimalById = async (req, res, next) => {
   const animalId = req.params.aid;
-  const animal = DUMMY_ANIMALS.find((a) => a.id === animalId);
+
+  let animal;
+  try {
+    animal = await Animal.findById(animalId);
+  } catch (err) {
+    const error = new HttpError(
+      "정보와 일치하는 반려동물을 찾을 수 없습니다.",
+      500
+    );
+    return next(error);
+  }
 
   if (!animal) {
-    return next(new HttpError("반려동물을 찾을 수 없습니다.", 404));
+    const error = next(
+      new HttpError("정보와 일치하는 반려동물을 찾을 수 없습니다.", 404)
+    );
+    return next(error);
   }
 
-  res.json({ animal });
+  res.json({ animal: animal.toObject({ getters: true }) });
 };
 
-const getAnimalsByUserId = (req, res, next) => {
+const getAnimalsByUserId = async (req, res, next) => {
   const userId = req.params.uid;
-  const animals = DUMMY_ANIMALS.filter((a) => a.creator === userId);
 
-  if (!animals || animals.length === 0) {
-    return next(new HttpError("반려동물을 찾을 수 없습니다.", 404));
+  let userWithAnimals;
+  try {
+    userWithAnimals = await User.findById(userId).populate("animals");
+  } catch (err) {
+    const error = new HttpError(
+      "사용자 정보와 일치하는 반려동물을 찾을 수 없습니다.",
+      500
+    );
+    return next(error);
   }
 
-  res.json({ animals });
+  if (!userWithAnimals || userWithAnimals.animals.length === 0) {
+    const error = new HttpError(
+      "사용자 정보와 일치하는 반려동물을 찾을 수 없습니다.",
+      404
+    );
+
+    return next(error);
+  }
+
+  res.json({
+    animal: userWithAnimals.animals.map((animal) =>
+      animal.toObject({ getters: true })
+    ),
+  });
 };
 
-const createAnimal = (req, res, next) => {
+const createAnimal = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     console.log(errors);
@@ -56,20 +68,51 @@ const createAnimal = (req, res, next) => {
   }
 
   const { animalName, species, age, description, creator } = req.body;
-  const createdAnimal = {
-    id: uuidv4(),
+  const createdAnimal = new Animal({
     animalName,
     species,
     age,
     description,
+    imageUrl:
+      "https://www.rd.com/wp-content/uploads/2021/04/GettyImages-528127648-scaled.jpg?resize=1536,1027",
     creator,
-  };
+  });
 
-  DUMMY_ANIMALS.push(createdAnimal);
-  res.status(201).json({ createdAnimal });
+  let user;
+  try {
+    user = await User.findById(creator);
+  } catch (err) {
+    const error = new HttpError("일치하는 사용자를 찾을 수 없습니다.", 404);
+    console.log(err);
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError("", 500);
+    console.log(err);
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdAnimal.save({ session: sess });
+    user.animals.push(createdAnimal);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      "반려동물 생성에 실패하였습니다. 다시 시도해주세요.",
+      500
+    );
+    console.log(err);
+    return next(error);
+  }
+
+  res.status(201).json({ animal: createdAnimal });
 };
 
-const updateAnimal = (req, res, next) => {
+const updateAnimal = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     console.log(errors);
@@ -79,21 +122,63 @@ const updateAnimal = (req, res, next) => {
   const { animalName, species, age, description } = req.body;
   const animalId = req.params.aid;
 
-  const updatedAnimal = { ...DUMMY_ANIMALS.find((a) => a.id === animalId) };
-  const animalIdx = DUMMY_ANIMALS.findIndex((a) => a.id === animalId);
-  updatedAnimal.animalName = animalName;
-  updatedAnimal.species = species;
-  updatedAnimal.age = age;
-  updatedAnimal.description = description;
+  let animal;
+  try {
+    animal = await Animal.findById(animalId);
+  } catch (err) {
+    const error = new HttpError("일치하는 정보를 가져올 수 없습니다.", 500);
+    console.log(err);
+    return next(error);
+  }
 
-  DUMMY_ANIMALS[animalIdx] = updateAnimal;
+  animal.animalName = animalName;
+  animal.species = species;
+  animal.age = age;
+  animal.description = description;
 
-  res.status(200).json({ animal: updatedAnimal });
+  try {
+    await animal.save();
+  } catch (err) {
+    const error = new HttpError("반려동물 정보 수정이 불가능합니다.", 500);
+    console.log(err);
+    return next(error);
+  }
+
+  res.status(200).json({ animal: animal.toObject({ getters: true }) });
 };
 
-const deleteAnimal = (req, res, next) => {
+const deleteAnimal = async (req, res, next) => {
   const animalId = req.params.aid;
-  DUMMY_ANIMALS = DUMMY_ANIMALS.filter((a) => a.id !== animalId);
+
+  let animal;
+  try {
+    animal = await Animal.findById(animalId).populate("creator");
+  } catch (err) {
+    const error = new HttpError("반려동물을 삭제할 수 없습니다.", 500);
+    console.log(err);
+    return next(error);
+  }
+
+  if (!animal) {
+    const error = new HttpError(
+      "일치하는 정보의 반려동물을 찾을 수 없습니다.",
+      404
+    );
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await animal.remove({ session: sess });
+    animal.creator.animals.pull(animal);
+    await animal.creator.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError("반려동물을 삭제할 수 없습니다.", 500);
+    console.log(err);
+    return next(error);
+  }
 
   res.status(200).json({ message: "반려동물을 삭제하였습니다." });
 };
