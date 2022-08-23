@@ -89,11 +89,14 @@ const login = async (req, res, next) => {
       "유효하지 않는 정보를 입력하셨습니다. 다시 시도해주세요.",
       401
     );
-    console.log(err);
+    // console.log(err);
     return next(error);
   }
 
-  res.json({ message: "logged in" });
+  res.json({
+    message: "logged in",
+    user: existingUser.toObject({ getters: true }),
+  });
 };
 
 exports.getUsers = getUsers;

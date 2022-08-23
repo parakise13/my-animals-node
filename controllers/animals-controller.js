@@ -54,7 +54,7 @@ const getAnimalsByUserId = async (req, res, next) => {
   }
 
   res.json({
-    animal: userWithAnimals.animals.map((animal) =>
+    animals: userWithAnimals.animals.map((animal) =>
       animal.toObject({ getters: true })
     ),
   });
