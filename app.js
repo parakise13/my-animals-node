@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require('path');
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -9,6 +12,8 @@ const httpError = require("./models/http-error");
 const app = express();
 
 app.use(bodyParser.json());
+
+app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -30,6 +35,12 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
+  if (req.file) {
+    fs.unlink(req.file.path, (err) => {
+      console.log(err);
+    });
+  }
+
   // 응답 헤더가 클라이언트에 전달되면 true 아니면 false
   if (res.headersSent) {
     return next(error);

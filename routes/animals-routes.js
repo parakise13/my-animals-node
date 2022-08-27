@@ -2,6 +2,7 @@ const express = require("express");
 const { check } = require("express-validator");
 
 const animalControllers = require("../controllers/animals-controller");
+const fileUpload = require("../middleware/file-upload");
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.get("/user/:uid", animalControllers.getAnimalsByUserId);
 
 router.post(
   "/",
+  fileUpload.single('imageUrl'),
   [
     check("animalName").not().isEmpty(),
     check("species").not().isEmpty(),

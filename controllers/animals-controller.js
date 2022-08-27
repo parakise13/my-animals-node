@@ -1,4 +1,5 @@
-const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
+
 const { validationResult } = require("express-validator");
 
 const HttpError = require("../models/http-error");
@@ -73,8 +74,7 @@ const createAnimal = async (req, res, next) => {
     species,
     age,
     description,
-    imageUrl:
-      "https://www.rd.com/wp-content/uploads/2021/04/GettyImages-528127648-scaled.jpg?resize=1536,1027",
+    imageUrl: req.file.path,
     creator,
   });
 
@@ -167,6 +167,8 @@ const deleteAnimal = async (req, res, next) => {
     return next(error);
   }
 
+  const imagePath = animal.imageUrl;
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -179,6 +181,10 @@ const deleteAnimal = async (req, res, next) => {
     console.log(err);
     return next(error);
   }
+
+  fs.unlink(imagePath, (err) => {
+    console.log(err);
+  });
 
   res.status(200).json({ message: "반려동물을 삭제하였습니다." });
 };

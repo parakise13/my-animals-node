@@ -50,8 +50,7 @@ const signup = async (req, res, next) => {
     name,
     email,
     password,
-    imageUrl:
-      "https://www.rd.com/wp-content/uploads/2021/04/GettyImages-528127648-scaled.jpg?resize=1536,1027",
+    imageUrl: req.file.path,
     animals: [],
   });
 
