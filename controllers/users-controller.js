@@ -116,7 +116,7 @@ const login = async (req, res, next) => {
   if (!existingUser) {
     const error = new HttpError(
       "유효하지 않는 정보를 입력하셨습니다. 다시 시도해주세요.",
-      401
+      403
     );
     // console.log(err);
     return next(error);
@@ -136,7 +136,7 @@ const login = async (req, res, next) => {
   if (!isValidPassword) {
     const error = new HttpError(
       "유효하지 않는 정보를 입력하셨습니다. 다시 시도해주세요.",
-      401
+      403
     );
     // console.log(err);
     return next(error);

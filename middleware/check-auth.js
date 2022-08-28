@@ -17,7 +17,7 @@ module.exports = (req, res, next) => {
 		next();
 
   } catch (err) {
-    const error = new HttpError("인증에 실패했습니다.", 401);
+    const error = new HttpError("인증에 실패했습니다.", 403);
     return next(error);
   }
 };

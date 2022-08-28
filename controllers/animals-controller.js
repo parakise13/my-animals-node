@@ -105,7 +105,6 @@ const createAnimal = async (req, res, next) => {
       "반려동물 생성에 실패하였습니다. 다시 시도해주세요.",
       500
     );
-    console.log(err);
     return next(error);
   }
 
@@ -115,7 +114,6 @@ const createAnimal = async (req, res, next) => {
 const updateAnimal = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log(errors);
     return next(new HttpError("유효하지 않은 정보를 입력하였습니다.", 422));
   }
 
@@ -127,10 +125,14 @@ const updateAnimal = async (req, res, next) => {
     animal = await Animal.findById(animalId);
   } catch (err) {
     const error = new HttpError("일치하는 정보를 가져올 수 없습니다.", 500);
-    console.log(err);
     return next(error);
   }
 
+  if (animal.creator.toString() !== req.userData.userId) {
+    const error = new HttpError("반려동물 수정이 불가능한 사용자입니다.", 401);
+    return next(error);
+  }
+  
   animal.animalName = animalName;
   animal.species = species;
   animal.age = age;
@@ -164,6 +166,11 @@ const deleteAnimal = async (req, res, next) => {
       "일치하는 정보의 반려동물을 찾을 수 없습니다.",
       404
     );
+    return next(error);
+  }
+
+  if (animal.creator.id !== req.userData.userId) {
+    const error = new HttpError("반려동물 삭제가 불가능한 사용자입니다.", 401);
     return next(error);
   }
 
