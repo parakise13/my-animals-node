@@ -1,0 +1,8 @@
+{
+  "env": {
+    "DB_USER": "lucia",
+    "DB_PASSWORD": "MivRehoAzwASiTyf",
+    "DB_NAME": "mern-animals",
+		"JWT_KEY": "supersecret_dont_share"
+  }
+}
