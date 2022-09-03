@@ -14,6 +14,7 @@ const app = express();
 app.use(bodyParser.json());
 
 app.use('/uploads/images', express.static(path.join('uploads', 'images')));
+app.use(express.static(path.join('public')));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -28,11 +29,15 @@ app.use((req, res, next) => {
 app.use("/api/animals", animalsRoutes);
 app.use("/api/users", usersRoutes);
 
-// 어떤 router에서도 res를 못 받은 경우
 app.use((req, res, next) => {
-  const error = new httpError("경로를 찾을 수 없습니다.", 404);
-  return next(error);
+  res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
 });
+
+// 어떤 router에서도 res를 못 받은 경우
+// app.use((req, res, next) => {
+//   const error = new httpError("경로를 찾을 수 없습니다.", 404);
+//   return next(error);
+// });
 
 app.use((error, req, res, next) => {
   if (req.file) {
