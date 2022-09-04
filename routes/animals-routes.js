@@ -15,7 +15,17 @@ router.use(checkAuth);
 
 router.post(
   "/",
-  fileUpload.single("imageUrl"),
+  fileUpload.upload.single("imageUrl"),
+  async (req, res, next) => {
+    console.log(req.file);
+    console.log(req.imageUrl);
+    const returnData = {
+      signedRequest: req.imageUrl,
+      url: `https://${fileUpload.s3bucket}.s3.amazonaws.com/${req.imageUrl}`,
+    };
+    res.write(JSON.stringify(returnData));
+    next();
+  },
   [
     check("animalName").not().isEmpty(),
     check("species").not().isEmpty(),

@@ -74,9 +74,11 @@ const createAnimal = async (req, res, next) => {
     species,
     age,
     description,
-    imageUrl: req.file.path,
+    imageUrl: req.file.location,
     creator,
   });
+
+  console.log(createdAnimal + ' = createdAnimal');
 
   let user;
   try {

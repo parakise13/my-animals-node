@@ -3,6 +3,10 @@
     "DB_USER": "lucia",
     "DB_PASSWORD": "MivRehoAzwASiTyf",
     "DB_NAME": "mern-animals",
-		"JWT_KEY": "supersecret_dont_share"
+		"JWT_KEY": "supersecret_dont_share",
+    "AWS_ACCESS_KEY_ID": "AKIA52YEHVUEXF5XAOX4",
+    "AWS_SECRET_ACCESS_KEY": "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",
+    "AWS_REGION": "ap-northeast-2",
+    "S3_BUCKET_NAME": "nahyeonawsbucket"
   }
 }
